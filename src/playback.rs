@@ -1,3 +1,4 @@
+use gtk4::Image;
 use opencv::prelude::*;
 use opencv::types::VectorOfi32;
 use opencv::{
@@ -7,28 +8,24 @@ use opencv::{
 };
 use std::fs;
 use std::time::Duration;
-use gtk4::Image;
 
 pub struct Playback {
   pub file_location: String,
-  pub image : Image,
-  pub frame_number : u32,
+  pub image: Image,
+  pub frame_number: u32,
 }
 
 impl Playback {
   pub fn play_playback(&self) {
-    glib::timeout_add(Duration::from_millis(33), || {
-      Playback::update_img(&self);
+    glib::timeout_add_local(Duration::from_millis(33), || {
+
       return glib::source::Continue(true);
     });
   }
 
-  fn update_img(&self) {
-    
-  }
+  fn update_img(&self) {}
 
   pub fn split_video(&mut self) {
-
     let mut capture = VideoCapture::from_file(&self.file_location, CAP_FFMPEG).expect("PANIC");
 
     let fps = capture.get(CAP_PROP_FPS).expect("Couldnt read fps");

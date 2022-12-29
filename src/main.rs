@@ -1,7 +1,9 @@
 mod playback;
 
+use glib::SourceId;
 use playback::Playback;
 
+use gdk_pixbuf::Pixbuf;
 use gtk4::prelude::*;
 use gtk4::{
   Application, ApplicationWindow, Box, Button, FileChooserAction, FileChooserDialog, FileFilter,
@@ -54,7 +56,17 @@ fn main() {
 
     window.set_child(Some(&view_box));
 
-    let _ = glib::timeout_add(Duration::from_millis(33), move || {
+    let mut frame: u32 = 0;
+
+    let id = glib::timeout_add_local(Duration::from_millis(33), move || {
+      update_image(&img, frame);
+
+      if frame < 972 {
+        frame += 1;
+      } else {
+        println!("frame reset");
+        frame = 0;
+      }
       glib::source::Continue(true)
     });
 
@@ -63,6 +75,17 @@ fn main() {
   });
 
   app.run();
+}
+
+fn update_image(img: &Image, frame: u32) {
+  let path = format!("./frames/frame-{frame}.png");
+  let pixbuf = Pixbuf::from_file(&path).unwrap();
+  img.set_from_pixbuf(Some(&pixbuf));
+  img.set_size_request(200, 200);
+}
+
+fn stop_upd(id: SourceId) {
+  id.remove();
 }
 
 fn import() {
