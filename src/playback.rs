@@ -1,61 +1,77 @@
+use std::io::stdin;
+
+use gdk_pixbuf::{Colorspace, Pixbuf};
 use gtk4::Image;
-use opencv::prelude::*;
-use opencv::types::VectorOfi32;
 use opencv::{
-  core::Mat,
-  imgcodecs::imwrite,
-  videoio::{VideoCapture, CAP_FFMPEG, CAP_PROP_FPS},
+  core::Vector,
+  imgcodecs::imencode,
+  prelude::{Mat, MatTraitConst, MatTraitConstManual},
+  types::VectorOfi32,
+  videoio::VideoCaptureTrait,
 };
-use std::fs;
-use std::time::Duration;
+
+use crate::decoder::VideoData;
 
 pub struct Playback {
-  pub file_location: String,
-  pub image: Image,
-  pub frame_number: u32,
+  image: Image,
 }
 
 impl Playback {
-  pub fn play_playback(&self) {
-    glib::timeout_add_local(Duration::from_millis(33), || {
-
-      return glib::source::Continue(true);
-    });
+  pub fn new() -> Playback {
+    let img = Image::new();
+    Playback { image: img }
   }
 
-  fn update_img(&self) {}
+  pub fn play(&self, capture: VideoData) {
+    let max_frames = capture.frames;
 
-  pub fn split_video(&mut self) {
-    let mut capture = VideoCapture::from_file(&self.file_location, CAP_FFMPEG).expect("PANIC");
-
-    let fps = capture.get(CAP_PROP_FPS).expect("Couldnt read fps");
-    println!("{}", fps);
-
-    let mut frame = Mat::default();
-
-    let frames_path = "./frames";
-
-    if fs::metadata(frames_path).is_ok() {
-      fs::remove_dir_all(frames_path).expect("Error deleting ./frames");
-    } else {
-      fs::create_dir(frames_path).expect("Error in creating ./frames");
-    }
+    let mut curr_frame = 0;
+    let mut cap = capture.capture;
 
     loop {
-      let a = capture
-        .read(&mut frame)
-        .expect("error in reading the capture");
-
-      if !a {
+      if curr_frame < max_frames {
+        curr_frame += 1;
+      } else {
         break;
       }
+      let mut frame = Mat::default();
 
-      let frame_no = self.frame_number;
-      let filename = format!("./frames/frame-{frame_no}.png");
-      let par = VectorOfi32::new();
-      let _ = imwrite(&filename, &frame, &par).unwrap();
+      if frame.size().unwrap().width > 0 {}
 
-      self.frame_number += 1;
+      cap
+        .read(&mut frame)
+        .expect(&format!("cannot read frame {curr_frame}/{max_frames}"));
+
+      let _pixbuf = Pixbuf::new(Colorspace::Rgb, false, 8, frame.cols(), frame.rows()).unwrap();
+
+      let params = VectorOfi32::new();
+      let mut vv = Vector::<u8>::new();
+
+      imencode(".png", &frame, &mut vv, &params).expect("AAAAAAAAA");
+
+      let mut count = 0;
+
+      for x in vv {
+        print!("{} ", x);
+
+        if count >= frame.cols() {
+          println!();
+          count = 0;
+        } else {
+          count += 1;
+        }
+      }
+
+      let mut name = String::new();
+      stdin().read_line(&mut name).expect("Failed input");
+
+      // let data = pixbuf.pixel_bytes().unwrap();
+
+      // let _ = &self.image.set_from_pixbuf(Some(&pixbuf));
     }
+  }
+
+  pub fn build(&self) -> &Image {
+    return &self.image;
   }
 }
