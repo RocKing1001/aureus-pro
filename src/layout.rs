@@ -1,6 +1,6 @@
 use gtk4::{
   traits::{BoxExt, ButtonExt, WidgetExt},
-  Box, Button, Label, ListBox, Orientation, Video,
+  Box, Button, Image, Label, ListBox, Orientation,
 };
 
 use crate::{decoder::split_video, playback::Playback};
@@ -30,16 +30,7 @@ pub fn main_layout() -> Box {
 
   file_bin.append(&import_btn);
 
-  let playback = Video::new();
-  playback.set_hexpand(true);
-
-  let pb = Playback::new();
-
-  let pb = pb.build();
-  pb.set_hexpand(true);
-
   sec_1.append(&file_bin);
-  sec_1.append(pb);
 
   let sec_2 = Box::new(Orientation::Horizontal, 0);
 
@@ -49,11 +40,14 @@ pub fn main_layout() -> Box {
   status_bar.append(&status_update);
   status_bar.set_widget_name("status_bar");
 
+  let a = split_video("./iswallowedshampoo.mp4");
+  let pb = Playback::new();
+  sec_1.append(&pb.image);
+  pb.play(a);
+
   import_btn.connect_clicked(move |_| {
     update_status(&status_update, "Importing files");
-    let a = split_video("./iswallowedshampoo.mp4");
-    let pb = Playback::new();
-    pb.play(a);
+    update_status(&status_update, "");
   });
 
   sec_1.set_vexpand(true);

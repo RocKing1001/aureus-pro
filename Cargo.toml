@@ -9,6 +9,5 @@ edition = "2021"
 gdk-pixbuf = "0.16.7"
 glib = "0.16.7"
 gtk4 = "0.5.4"
-image = "0.24.5"
 opencv = "0.74.2"
 # cv = { git = "https://github.com/nebgnahz/cv-rs.git" }

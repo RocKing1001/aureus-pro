@@ -1,19 +1,17 @@
-use std::io::stdin;
+use std::time::Duration;
 
 use gdk_pixbuf::{Colorspace, Pixbuf};
-use gtk4::Image;
+use glib::Bytes;
+use gtk4::{traits::WidgetExt, Image};
 use opencv::{
-  core::Vector,
-  imgcodecs::imencode,
   prelude::{Mat, MatTraitConst, MatTraitConstManual},
-  types::VectorOfi32,
   videoio::VideoCaptureTrait,
 };
 
 use crate::decoder::VideoData;
 
 pub struct Playback {
-  image: Image,
+  pub image: Image,
 }
 
 impl Playback {
@@ -28,47 +26,46 @@ impl Playback {
     let mut curr_frame = 0;
     let mut cap = capture.capture;
 
-    loop {
-      if curr_frame < max_frames {
-        curr_frame += 1;
-      } else {
-        break;
-      }
+    let _ = &self
+      .image
+      .set_size_request(capture.res.width, capture.res.height);
+
+
+    let _ = glib::timeout_add(Duration::from_millis(33), move || {
       let mut frame = Mat::default();
 
-      if frame.size().unwrap().width > 0 {}
+      if frame.rows() <= 0 {
+        println!("Playback ended");
+        return glib::Continue(false);
+      }
 
+      // VideoCapture
       cap
         .read(&mut frame)
         .expect(&format!("cannot read frame {curr_frame}/{max_frames}"));
 
-      let _pixbuf = Pixbuf::new(Colorspace::Rgb, false, 8, frame.cols(), frame.rows()).unwrap();
+      let a = frame.data_bytes().unwrap();
 
-      let params = VectorOfi32::new();
-      let mut vv = Vector::<u8>::new();
+      let byte = Bytes::from(a);
+      let rowstride =
+        Pixbuf::calculate_rowstride(Colorspace::Rgb, false, 8, frame.cols(), frame.rows());
 
-      imencode(".png", &frame, &mut vv, &params).expect("AAAAAAAAA");
+      let pixbuf = Pixbuf::from_bytes(
+        &byte,
+        Colorspace::Rgb,
+        false,
+        8,
+        frame.cols(),
+        frame.rows(),
+        rowstride,
+      );
 
-      let mut count = 0;
+      let pb = Playback::new();
+      pb.image.set_from_pixbuf(Some(&pixbuf));
 
-      for x in vv {
-        print!("{} ", x);
-
-        if count >= frame.cols() {
-          println!();
-          count = 0;
-        } else {
-          count += 1;
-        }
-      }
-
-      let mut name = String::new();
-      stdin().read_line(&mut name).expect("Failed input");
-
-      // let data = pixbuf.pixel_bytes().unwrap();
-
-      // let _ = &self.image.set_from_pixbuf(Some(&pixbuf));
-    }
+      curr_frame += 1;
+      return glib::Continue(true);
+    });
   }
 
   pub fn build(&self) -> &Image {
